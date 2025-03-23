@@ -1,6 +1,34 @@
 const fs = require('fs');
 const path = require('path');
 
+// 디렉토리 재귀적으로 복사하는 함수
+function copyDirectoryRecursive(source, destination) {
+  // 디렉토리가 존재하지 않으면 생성
+  if (!fs.existsSync(destination)) {
+    fs.mkdirSync(destination, { recursive: true });
+  }
+  
+  // 소스 디렉토리의 모든 항목 읽기
+  const items = fs.readdirSync(source);
+  
+  // 각 항목에 대해 처리
+  for (const item of items) {
+    const sourcePath = path.join(source, item);
+    const destPath = path.join(destination, item);
+    
+    // 파일인지 디렉토리인지 확인
+    const stat = fs.statSync(sourcePath);
+    
+    if (stat.isDirectory()) {
+      // 디렉토리면 재귀적으로 복사
+      copyDirectoryRecursive(sourcePath, destPath);
+    } else {
+      // 파일이면 복사
+      fs.copyFileSync(sourcePath, destPath);
+    }
+  }
+}
+
 // 배포를 위한 public 디렉토리 생성 함수
 function createPublicDirectory() {
   console.log('Creating public directory for Vercel deployment...');
@@ -25,40 +53,13 @@ function createPublicDirectory() {
   
   // lib 디렉토리 복사
   if (fs.existsSync('lib')) {
-    if (!fs.existsSync('public/lib')) {
-      fs.mkdirSync('public/lib');
-    }
-    
-    const libFiles = fs.readdirSync('lib');
-    libFiles.forEach(file => {
-      fs.copyFileSync(
-        path.join('lib', file),
-        path.join('public/lib', file)
-      );
-    });
+    copyDirectoryRecursive('lib', 'public/lib');
     console.log('Copied lib directory');
   }
   
   // documentation 디렉토리의 assets 복사
   if (fs.existsSync('documentation/assets')) {
-    if (!fs.existsSync('public/documentation')) {
-      fs.mkdirSync('public/documentation');
-      fs.mkdirSync('public/documentation/assets');
-      
-      if (fs.existsSync('documentation/assets/img')) {
-        if (!fs.existsSync('public/documentation/assets/img')) {
-          fs.mkdirSync('public/documentation/assets/img');
-        }
-        
-        const imgFiles = fs.readdirSync('documentation/assets/img');
-        imgFiles.forEach(file => {
-          fs.copyFileSync(
-            path.join('documentation/assets/img', file),
-            path.join('public/documentation/assets/img', file)
-          );
-        });
-      }
-    }
+    copyDirectoryRecursive('documentation/assets', 'public/documentation/assets');
     console.log('Copied documentation assets');
   }
   
